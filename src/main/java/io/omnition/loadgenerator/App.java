@@ -1,5 +1,13 @@
 package io.omnition.loadgenerator;
 
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
+import com.google.gson.Gson;
+import io.omnition.loadgenerator.LoadGeneratorParams.RootServiceRoute;
+import io.omnition.loadgenerator.util.*;
+import org.apache.log4j.Logger;
+import zipkin2.codec.SpanBytesEncoder;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.nio.file.Files;
@@ -8,22 +16,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
-import io.omnition.loadgenerator.util.ITraceEmitter;
-import io.omnition.loadgenerator.util.ZipkinTraceEmitter;
-import org.apache.log4j.Logger;
-
-import com.beust.jcommander.JCommander;
-import com.beust.jcommander.Parameter;
-import com.google.gson.Gson;
-
-import io.omnition.loadgenerator.LoadGeneratorParams.RootServiceRoute;
-import io.omnition.loadgenerator.util.JaegerTraceEmitter;
-import io.omnition.loadgenerator.util.LogLevel;
-import io.omnition.loadgenerator.util.ScheduledTraceGenerator;
-import io.omnition.loadgenerator.util.SummaryLogger;
-
-import zipkin2.codec.SpanBytesEncoder;
 
 public class App {
     private final static Logger logger = Logger.getLogger(App.class);
@@ -49,10 +41,13 @@ public class App {
     @Parameter(names = "--zipkinV2Proto3Url", description = "URL of the zipkinV2 proto3 collector", required = false)
     private String zipkinV2Proto3Url = null;
 
+    @Parameter(names = "--skywalkingProtoUrl", description = "URL of the skywalking proto3 collector", required = false)
+    private String skywalkingProtoUrl = null;
+
     @Parameter(names = "--flushIntervalMillis", description = "How often to flush traces", required = false)
     private long flushIntervalMillis = TimeUnit.SECONDS.toMillis(5);
 
-    @Parameter(names = { "--help", "-h" }, help = true)
+    @Parameter(names = {"--help", "-h"}, help = true)
     private boolean help;
 
     private List<ScheduledTraceGenerator> scheduledTraceGenerators = new ArrayList<>();
@@ -93,7 +88,7 @@ public class App {
         this.logLevel = LogLevel.values()[this.logLevelParam];
 
         File f = new File(this.topologyFile);
-        if(!f.exists() || f.isDirectory()) {
+        if (!f.exists() || f.isDirectory()) {
             logger.error("Invalid topology file specified: " + this.topologyFile);
             throw new FileNotFoundException(this.topologyFile);
         }
@@ -144,6 +139,9 @@ public class App {
         }
         if (zipkinV2Proto3Url != null) {
             emitters.add(new ZipkinTraceEmitter(zipkinV2Proto3Url, SpanBytesEncoder.PROTO3));
+        }
+        if (skywalkingProtoUrl != null) {
+            emitters.add(new SkywalkingTraceEmitter(skywalkingProtoUrl));
         }
         if (emitters.size() == 0) {
             logger.error("No emitters specified.");
