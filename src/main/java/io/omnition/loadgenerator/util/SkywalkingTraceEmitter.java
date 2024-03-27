@@ -20,7 +20,6 @@ public class SkywalkingTraceEmitter implements ITraceEmitter {
     @Override
     public String emit(Trace trace) {
         List<TraceSegment> traceSegments = new ArrayList<>();
-
         serviceClient.consume(traceSegments);
         return null;
     }
