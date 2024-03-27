@@ -20,6 +20,10 @@ public class SkywalkingTraceEmitter implements ITraceEmitter {
     @Override
     public String emit(Trace trace) {
         List<TraceSegment> traceSegments = new ArrayList<>();
+        trace.spans.forEach(x->{
+            TraceSegment segment = new TraceSegment();
+            traceSegments.add(segment);
+        });
         serviceClient.consume(traceSegments);
         return null;
     }
